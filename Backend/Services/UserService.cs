@@ -9,11 +9,20 @@ namespace Backend.Services
     {
         public async Task<IReadOnlyList<UserResponse>> GetAllUsersAsync(CancellationToken ct = default)
         {
-          return await db.Users
-                .AsNoTracking()
-                .OrderBy(u => u.Id)
-                .Select(u => ToUserResponse(u))
-                .ToListAsync(ct);
+            var now = DateTime.Now;
+            return await db.Users
+                    .AsNoTracking()
+                    .OrderBy(u => u.Id)
+                    .Select(u => new UserResponse
+                        {
+                            Id = u.Id,
+                            Name = u.Name,
+                            Surname = u.Surname,
+                            ActiveRegistrations = db.Reservations.Count(r => r.UserId == u.Id && r.EndTime > now)
+                        }
+                    
+                    )
+                    .ToListAsync(ct);
         }
 
         public async Task<UserResponse> GetUserByIdAsync(int id, CancellationToken ct = default)

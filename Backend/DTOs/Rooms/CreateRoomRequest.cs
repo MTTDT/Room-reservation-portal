@@ -22,5 +22,6 @@ namespace Backend.DTOs.Rooms
 
         [Required]
         public List<RoomEquipment> Equipment { get; set; } = [];
+        
     }
 }

@@ -24,6 +24,8 @@ export default function UsersPage() {
               <TableCell>ID</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Surname</TableCell>
+              <TableCell>Active Registrations</TableCell>
+
             </TableRow>
           </TableHead>
           <TableBody>
@@ -32,6 +34,8 @@ export default function UsersPage() {
                 <TableCell>{user.id}</TableCell>
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.surname}</TableCell>
+                <TableCell>{user.activeRegistrations}</TableCell>
+
               </TableRow>
             ))}
           </TableBody>

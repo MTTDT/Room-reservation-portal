@@ -9,6 +9,12 @@ export default defineConfig({
       '/api': 'http://localhost:5194',
       
     }
-  }
+  },
+   resolve: {
+    dedupe: ['react', 'react-dom'],
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', '@mui/x-scheduler/event-calendar'],
+  },
 
 })

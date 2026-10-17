@@ -10,7 +10,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase("RoomReservationDb"));
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
-builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IReservationService, ReservationService>();
 
 
 var app = builder.Build();

@@ -12,6 +12,6 @@ namespace Backend.Data
         public  DbSet<User> Users => Set<User>();
         public  DbSet<Room> Rooms => Set<Room>();
 
-        public  DbSet<Booking> Bookings => Set<Booking>();
+        public  DbSet<Reservation> Reservations => Set<Reservation>();
     }
 }

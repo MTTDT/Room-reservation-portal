@@ -41,7 +41,7 @@ export default function RoomsPage() {
                 <TableCell>{room.location}</TableCell>
                 <TableCell>
                   {room.equipment.map((item: string) => (
-                    <span key={item}>{item}</span>
+                    <span key={item}>{item} </span>
                   ))}
                 </TableCell>
               </TableRow>
