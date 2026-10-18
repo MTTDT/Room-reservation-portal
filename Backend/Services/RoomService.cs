@@ -2,6 +2,7 @@ using Backend.DTOs.Rooms;
 using Backend.Models;
 using Backend.Data;
 using Microsoft.EntityFrameworkCore;
+using Backend.Exceptions;
 
 namespace Backend.Services
 {
@@ -24,7 +25,7 @@ namespace Backend.Services
 
             if (room == null)
             {
-                return null;
+                throw NotFoundException.For<Room>(id);
             }
 
             return ToRoomResponse(room);
@@ -53,7 +54,7 @@ namespace Backend.Services
 
             if (room == null)
             {
-                return null;
+                throw NotFoundException.For<Room>(id);
             }
 
             room.Name = request.Name.Trim();
@@ -70,11 +71,11 @@ namespace Backend.Services
 
         public async Task DeleteRoomAsync(int id, CancellationToken ct = default)
         {
-            var room = await db.Rooms.FindAsync(new object[] { id }, ct);
+            var room = await db.Rooms.FindAsync([id], ct);
 
             if (room == null)
             {
-                return;
+                throw NotFoundException.For<Room>(id);
             }
 
             db.Rooms.Remove(room);

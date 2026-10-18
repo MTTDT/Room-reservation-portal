@@ -1,4 +1,4 @@
-import type { Reservation, CreateReservation } from "../types/reservation";
+import type { Reservation, CreateReservation, UpdateReservation } from "../types/reservation";
 
 export async function getReservations(): Promise<Reservation[]> {
     const response = await fetch("/api/reservation");
@@ -14,6 +14,32 @@ export async function createReservation(req: CreateReservation): Promise<Reserva
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(req)
     })
+
+    if(!response.ok){
+        const problem = await response.json().catch(() => null);
+        throw new Error(problem?.detail ?? `Request failed (${response.status})`);
+    }
     
+    return response.json();
+}
+
+export async function updateReservation(req: UpdateReservation, id: number): Promise<Reservation> {
+    console.log(req, "<<<")
+
+    const response = await fetch(`/api/reservation/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(req)
+    })
+
+        console.log(req, "<<<----")
+
+
+    if(!response.ok){
+        const problem = await response.json().catch(() => null);
+        throw new Error(problem?.detail ?? `Request failed (${response.status})`);
+    }
+
+
     return response.json();
 }

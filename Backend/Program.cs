@@ -1,6 +1,9 @@
 using Backend.Data;
 using Backend.Services;
+using Backend.AppOptions;
 using Microsoft.EntityFrameworkCore;
+using Backend.Models;
+using Backend.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,9 +14,18 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseInMemoryDataba
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services
+    .AddOptions<ReservationOptions>()
+    .Bind(builder.Configuration.GetSection(ReservationOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddExceptionHandler<AppExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 using (var scope = app.Services.CreateScope())
 {

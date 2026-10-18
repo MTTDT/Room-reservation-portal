@@ -1,58 +1,104 @@
 import { useState, type ChangeEvent, type SubmitEvent } from "react";
 import { Box, TextField, Alert, CircularProgress, Dialog, DialogTitle, Button } from "@mui/material";
-import type { CreateReservation } from "../types/reservation";
-import dayjs, { type Dayjs } from "dayjs";
+import type { CreateReservation, UpdateReservation } from "../types/reservation";
+import { ReservationStatus } from "../types/reservationStatus";
+import dayjs, { Dayjs } from "dayjs";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 
 
 export interface ReservationFormProps{
+    updateRes: UpdateReservation | null,
     open: boolean,
     userId: number,
-    roomId: number,
-    startTime: Date,
-    handleSubmit: (value: CreateReservation) => void,
+    roomId?: number,
+    startTime?: Date,
+    reservation?: UpdateReservation,
+    handleSubmit:(value: CreateReservation | UpdateReservation) => void,
     handleClose: () => void,
     error?: string,
     isSubmitting: boolean
 }
 
+interface FormValues {
+    title: string;
+    from: Dayjs | null;
+    to: Dayjs | null;
+    attendeeCount: number;
+    status?: ReservationStatus;
+}
+
 
 
 export default function ReservationForm(props: ReservationFormProps){
-    const [values, setValues] = useState<{
-        title: string;
-        from: Dayjs | null;
-        to: Dayjs | null;
-        attendeeCount: string;
-    }>({
-        title: "",
-        from: dayjs(props.startTime),
-        to: dayjs(props.startTime).add(1, "hour"),
-        attendeeCount: "",
-    });
+    console.log(props.updateRes)
+
+    const [values, setValues] = useState<FormValues>(
+        {
+            title: props.updateRes?.title ?? "",
+            from: props.updateRes ? dayjs(props.updateRes.startTime) : dayjs(props.startTime),
+            to: props.updateRes ? dayjs(props.updateRes.endTime) : dayjs(props.startTime).add(1, "hour"),
+            attendeeCount: props.updateRes?.attendeeCount ?? 0,
+            status: props.updateRes?.status
+        }
+    )
+    console.log(values)
+   
     
-    const [errors, setErrors] = useState({});
 
     
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        
         const { name, value } = e.target;
         setValues((prev) => ({ ...prev, [name]: value}))
     }
 
-    const validate = () => {};
+    const currentlyHappening = () => {
+        const now = dayjs();
+        const { from, to } = values;
+        if (!from || !to) return false;
+        return !from.isAfter(now) && !to.add(1, "hour").isBefore(now)
+    }
+    const willHappen = () => {
+        const now = dayjs();
+        if (!values.from) return false;
+        return values.from.isAfter(now)
+    }
 
     const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const reservation: CreateReservation = 
-        {
-            roomId: props.roomId,
-            userId: props.userId,
-            title: values.title,
-            startTime: values.from!.toISOString(),
-            endTime: values.to!.toISOString(),
-            atendeeCount: Number(values.attendeeCount)
+        e.preventDefault();    
+
+        if(props.updateRes !== null){
+            const reservation: UpdateReservation = 
+            {
+                title: values.title,
+                startTime: values.from!.toISOString(),
+                endTime: values.to!.toISOString(),
+                attendeeCount: Number(values.attendeeCount),
+                status: values.status ?? ReservationStatus.Booked
+            }
+            props.handleSubmit(reservation)
         }
-        props.handleSubmit(reservation)
+        else{
+            console.log("creating new")
+            const reservation: CreateReservation = 
+            {
+                roomId: props.roomId ?? 0,
+                userId: props.userId,
+                title: values.title,
+                startTime: values.from!.toISOString(),
+                endTime: values.to!.toISOString(),
+                atendeeCount: Number(values.attendeeCount)
+            }
+            props.handleSubmit(reservation)
+        } 
+    }
+
+    const handleCancel = () => {
+        props.handleSubmit({status: ReservationStatus.Cancelled} as UpdateReservation);
+    }
+    
+    const handleComplete = () => {
+        props.handleSubmit({status: ReservationStatus.Completed} as UpdateReservation);
     }
 
     return(
@@ -107,15 +153,29 @@ export default function ReservationForm(props: ReservationFormProps){
                     value={values.attendeeCount}
                     required
                 />
+                
                 <Button type="submit" variant="contained" disabled={props.isSubmitting}>
                     {props.isSubmitting ? (
                         <CircularProgress />
-                    ):  <p>Submit reservation</p>}
-                   
+                        ):  props.updateRes ? "Update reservation" : "Submit reservation"
+                    }
                 </Button>
-                {props.isSubmitting && (
-                    <CircularProgress />
+
+                {props.updateRes && currentlyHappening() && (
+                    <Button type="button" variant="contained" onClick={handleComplete}>
+                        Complete reservation
+                    </Button>
                 )}
+
+                {props.updateRes && willHappen() && (
+                    <Button type="button" variant="contained" onClick={handleCancel}>
+                        Cancel reservation
+                    </Button>
+                )}
+                
+
+                   
+               
                 {props.error && <Alert severity="error">{props.error}</Alert>}
             </Box>
         </Dialog>

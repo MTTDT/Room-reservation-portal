@@ -4,11 +4,16 @@ using Backend.Data;
 using Backend.DTOs.Reservations;
 using Microsoft.EntityFrameworkCore;
 using Backend.DTOs.Users;
+using Backend.AppOptions;
+using Microsoft.Extensions.Options;
+using System.ComponentModel.DataAnnotations;
+using Backend.Exceptions;
 
 namespace Backend.Services
 {
-    public class ReservationService(AppDbContext db) : IReservationService
+    public class ReservationService(AppDbContext db, IOptions<ReservationOptions> options) : IReservationService
     {
+        private readonly ReservationOptions rules = options.Value;
         public async Task<IReadOnlyList<ReservationResponse>> GetAllReservationsAsync(CancellationToken ct = default)
         {
             return await db.Reservations
@@ -20,17 +25,25 @@ namespace Backend.Services
 
         public async Task<ReservationResponse> GetReservationByIdAsync(int id, CancellationToken ct = default)
         {
-            return await db.Reservations
+            var reservation = await db.Reservations
                 .AsNoTracking()
                 .Where(r => r.Id == id)
                 .Select(ToResponse)
                 .FirstOrDefaultAsync(ct);
+
+            if(reservation == null)
+            {
+                throw NotFoundException.For<Reservation>(id);
+            }
+            return reservation;
 
             
         }
 
         public async Task<ReservationResponse> CreateReservationAsync(CreateReservationRequest request, CancellationToken ct = default)
         {
+            await ValidateLocallyAsync(request.StartTime, request.EndTime, request.RoomId, request.UserId, request.AttendeeCount, ct);
+
             var reservation = new Reservation
             {
                 Title = request.Title,
@@ -49,15 +62,22 @@ namespace Backend.Services
 
         public async Task<ReservationResponse> UpdateReservationAsync(int id, UpdateReservationRequest request, CancellationToken ct = default)
         {
-            var reservation = await db.Reservations.FindAsync(new object[] { id }, ct);
+            var reservation = await db.Reservations.FindAsync([id], ct);
 
             if (reservation == null)
             {
-                return null;
+                throw NotFoundException.For<Reservation>(id);
             }
 
-            reservation.StartTime = request.StartTime;
-            reservation.EndTime = request.EndTime;
+
+            await ValidateLocallyAsync(request.StartTime, request.EndTime, reservation.RoomId, reservation.UserId, request.AttendeeCount, ct, id);
+
+            if (request.StartTime.HasValue) reservation.StartTime = request.StartTime.Value;
+            if (request.EndTime.HasValue) reservation.EndTime = request.EndTime.Value;
+            if (request.Title is not null) reservation.Title = request.Title;
+            if (request.AttendeeCount.HasValue) reservation.AttendeeCount = request.AttendeeCount.Value;
+            if (request.Status.HasValue) reservation.Status = request.Status.Value;
+
 
             await db.SaveChangesAsync(ct);
 
@@ -66,13 +86,15 @@ namespace Backend.Services
 
         public async Task DeleteReservationAsync(int id, CancellationToken ct = default)
         {
-            var reservation = await db.Reservations.FindAsync(new object[] { id }, ct);
+            var reservation = await db.Reservations.FindAsync([id], ct);
 
-            if (reservation != null)
+            if (reservation == null)
             {
-                db.Reservations.Remove(reservation);
-                await db.SaveChangesAsync(ct);
+                throw NotFoundException.For<Reservation>(id);
             }
+            db.Reservations.Remove(reservation);
+            await db.SaveChangesAsync(ct);
+
         }
         private static readonly Expression<Func<Reservation, ReservationResponse>> ToResponse =
             r => new ReservationResponse
@@ -89,5 +111,69 @@ namespace Backend.Services
                 AttendeeCount = r.AttendeeCount,
                 Status = r.Status
             };
+
+        private async Task ValidateLocallyAsync(DateTime? reqStartTime, DateTime? reqEndTime, int reqRoomId, int reqUserId, int? reqAttendeeCount, CancellationToken ct, int? reqReservationId = null )
+        {
+            if (reqStartTime < DateTime.UtcNow)
+            {
+                throw new AppValidationException("Start time can't be in the past");
+            }
+            if (reqEndTime <= reqStartTime)
+            {
+                throw new AppValidationException("End time must be after start time");
+            }
+            var duration = reqEndTime - reqStartTime;
+
+            if(duration > TimeSpan.FromDays(rules.MaxDurationDays))
+            {
+                throw new AppValidationException($"A reservation can't be longer than {rules.MaxDurationDays}");
+            }
+
+            if(reqStartTime > DateTime.UtcNow.AddDays(rules.MaxAdvanceReservationDays))
+            {
+                throw new AppValidationException($"A reservation can't take place later than  {rules.MaxAdvanceReservationDays}");
+            }
+
+            var roomOverlaps = await db.Reservations.AnyAsync(r =>
+                r.RoomId == reqRoomId &&
+                r.Status == ReservationStatus.Booked &&
+                r.Id != reqReservationId &&
+                r.StartTime < reqEndTime &&
+                r.EndTime > reqStartTime, ct
+            );
+
+            var room = await db.Rooms
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == reqRoomId, ct);
+            
+            if (room == null) throw new AppValidationException($"Room {reqRoomId} does not exist");
+
+            if (roomOverlaps)
+            {
+                throw new AppValidationException($"Room {room.Name} is already booked for selected time");
+            }
+
+            if(room.Capacity < reqAttendeeCount)
+            {
+                throw new AppValidationException($"Attendee count {reqAttendeeCount} exceeds the room capacity of {room.Capacity}");
+            }
+            if(room.Status == RoomStatus.Inactive)
+            {
+                throw new AppValidationException($"Room {room.Name} is inactive");
+            }
+
+            var userOverlaps = await db.Reservations.AnyAsync( r =>
+                r.UserId == reqUserId &&
+                r.Status == ReservationStatus.Booked &&
+                r.Id != reqReservationId &&
+                r.StartTime < reqEndTime &&
+                r.EndTime > reqStartTime, ct
+            );
+
+            if (userOverlaps)
+            {
+                throw new AppValidationException($"You already have a reservation for selected time");
+            }
+        }
     }
 }

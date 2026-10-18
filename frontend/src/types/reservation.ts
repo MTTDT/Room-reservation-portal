@@ -21,3 +21,11 @@ export interface CreateReservation{
     endTime: string,
     atendeeCount: number
 }
+
+export interface UpdateReservation{
+    title?: string,
+    startTime?: string,
+    endTime?: string,
+    attendeeCount?: number,
+    status?: ReservationStatus
+}

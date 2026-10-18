@@ -12,8 +12,9 @@ import { alpha, type Theme } from '@mui/material/styles';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import type { Room } from '../types/room'
-import type { Reservation } from '../types/reservation';
-import type Slot from "../pages/NewReservationPage"
+import type { Reservation, UpdateReservation } from '../types/reservation';
+import { updateReservation } from '../api/reservationApi';
+import { ReservationStatus, reservationStatusLabels } from '../types/reservationStatus';
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -30,6 +31,7 @@ export interface Slot {
 }
 
 export interface RoomTimelineProps {
+  showOnlyMy: boolean,
   rooms: Room[];
   reservations: Reservation[];
   userId: number | null;
@@ -37,7 +39,7 @@ export interface RoomTimelineProps {
   defaultDate?: DateInput;
   weekStartsOn?: 0 | 1;
   locale?: string;
-  onBookingClick?: (reservation: Reservation) => void;
+  onBookingClick?: (updateReq: UpdateReservation, resId: number, uId: number) => void;
   onSlotClick?: (slot: Slot) => void;
   className?: string;
   style?: React.CSSProperties;
@@ -104,15 +106,7 @@ function colPos(cols: Column[], t: number): number {
   return cols.length;
 }
 
-function hashHue(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360;
-  return h;
-}
 
-/* ------------------------------------------------------------------ */
-/* Constants & theme helpers                                           */
-/* ------------------------------------------------------------------ */
 
 const ROOM_W = 150;
 const LANE_H = 34;
@@ -125,12 +119,11 @@ const weekendBg = (t: Theme) => subtle(t, 0.02);
 const hoverBg = (t: Theme) => subtle(t, 0.06);
 const todayBg = (t: Theme) => alpha(t.palette.primary.main, 0.08);
 
-/* ------------------------------------------------------------------ */
-/* Component                                                           */
-/* ------------------------------------------------------------------ */
+
 
 export function RoomTimeline(props: RoomTimelineProps) {
   const {
+    showOnlyMy,
     rooms,
     reservations,
     defaultView = 'week',
@@ -141,6 +134,7 @@ export function RoomTimeline(props: RoomTimelineProps) {
     onSlotClick,
     className,
     style,
+
   } = props;
 
   const [view, setView] = React.useState<TimelineView>(defaultView);
@@ -237,6 +231,17 @@ export function RoomTimeline(props: RoomTimelineProps) {
     isWeekend(c) && { bgcolor: weekendBg },
     isToday(c) && { bgcolor: todayBg, fontWeight: 600 },
   ];
+
+  const buildUpdateReq = (r: Reservation) => {
+    const updateReq: UpdateReservation = {
+      title: r.title,
+      startTime: r.startTime,
+      endTime: r.endTime,
+      attendeeCount: r.attendeeCount,
+      status: r.status
+    } 
+    return updateReq
+  }
 
   return (
     <Paper variant="outlined" className={className} style={style} sx={{ borderRadius: 2, overflow: 'hidden' }}>
@@ -382,18 +387,21 @@ export function RoomTimeline(props: RoomTimelineProps) {
                     ))}
                   </Box>
 
-                  {items.map((it) => {
+                  {items.filter(i => !showOnlyMy || i.b.userId === props.userId).map((it) => {
+                    
                     const n = cols.length;
                     const width = Math.max(it.right - it.left, 0.3);
                     const clippedLeft = it.s < range.start.getTime();
                     const clippedRight = it.e > range.end.getTime();
-                    const color = it.b.userId === props.userId ? "rgba(169, 8, 255, 0.9)" : "rgba(247, 155, 89, 0.9)" 
-
+                    const alpha = it.b.status === ReservationStatus.Booked ? 0.9 : 0.5
+                    const color = it.b.userId === props.userId ? `rgba(169, 8, 255, ${alpha})` : `rgba(247, 155, 89, ${alpha})`
                     return (
+                      
                       <Tooltip
                         key={it.b.id}
                         title={
                           <Box>
+                            <Box sx={{ fontWeight: 400 }}>{ reservationStatusLabels[it.b.status] }</Box>
                             <Box sx={{ fontWeight: 600 }}>{it.b.userName} {it.b.userSurname}</Box>
                             <Box sx={{ fontSize: 12 }}>
                               {fmt.full.format(it.s)} → {fmt.full.format(it.e)}
@@ -404,7 +412,7 @@ export function RoomTimeline(props: RoomTimelineProps) {
                       >
                         <ButtonBase
                           disableRipple
-                          onClick={() => onBookingClick?.(it.b)}
+                          onClick={() => onBookingClick?.(buildUpdateReq(it.b), it.b.id, it.b.userId)}
                           sx={{
                             position: 'absolute',
                             zIndex: 2,

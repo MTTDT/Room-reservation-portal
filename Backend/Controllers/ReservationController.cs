@@ -29,13 +29,11 @@ namespace Backend.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateReservation([FromBody] CreateReservationRequest request, CancellationToken ct)
         {
-            Console.WriteLine("got in");
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
             var createdReservation = await reservationService.CreateReservationAsync(request, ct);
-            Console.WriteLine("got in and created " + createdReservation.Id);
 
             return CreatedAtAction(nameof(GetReservationById), new { id = createdReservation.Id }, createdReservation);
         }

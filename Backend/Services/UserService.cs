@@ -2,6 +2,7 @@ using Backend.Models;
 using Backend.DTOs.Users;
 using Backend.Data;
 using Microsoft.EntityFrameworkCore;
+using Backend.Exceptions;
 
 namespace Backend.Services
 {
@@ -33,7 +34,7 @@ namespace Backend.Services
 
             if (user == null)
             {
-                return null;
+                throw NotFoundException.For<User>(id);
             }
 
             return ToUserResponse(user);
@@ -59,7 +60,7 @@ namespace Backend.Services
 
             if (user == null)
             {
-                return null;
+                throw NotFoundException.For<User>(id);
             }
 
             if (request.Name != null)
@@ -80,6 +81,11 @@ namespace Backend.Services
         public async Task DeleteUserAsync(int id, CancellationToken ct = default)
         {
             var user = await db.Users.FindAsync([id], ct);
+
+            if(user == null)
+            {
+                throw NotFoundException.For<User>(id);
+            }
           
             db.Users.Remove(user);
             await db.SaveChangesAsync(ct);
