@@ -3,18 +3,42 @@ using Backend.Models;
 using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Backend.Exceptions;
+using Backend.DTOs.Users;
 
 namespace Backend.Services
 {
     public class RoomService(AppDbContext db) : IRoomService
     {
-        public async Task<IReadOnlyList<RoomResponse>> GetAllRoomsAsync(CancellationToken ct = default)
+        public async Task<IReadOnlyList<RoomResponse>> GetAllRoomsAsync(FilterRoomRequest? filter = null,  CancellationToken ct = default)
         {
-            return await db.Rooms
-                .AsNoTracking()
+            IQueryable<Room> query = db.Rooms.AsNoTracking();
+
+            if(filter == null)
+            {
+                return await query
+                    .OrderBy(r => r.Id)
+                    .Select(r => ToRoomResponse(r))
+                    .ToListAsync(ct);
+            }
+
+            if(filter.Capacity.HasValue) query = query.Where(r => r.Capacity >= filter.Capacity);
+
+            if(filter.Floor.HasValue) query = query.Where(r => r.Floor == filter.Floor);
+
+            var rooms = await query
                 .OrderBy(r => r.Id)
-                .Select(r => ToRoomResponse(r))
                 .ToListAsync(ct);
+          
+            if(filter.Equipment != null)
+            {
+                var equipmentFilter = filter.Equipment.ToList();
+                rooms = rooms.Where(r => equipmentFilter.All(r.Equipment.Contains)).ToList();
+            } 
+
+            
+             return rooms
+                .Select(ToRoomResponse)
+                .ToList(); 
         }
 
         public async Task<RoomResponse> GetRoomByIdAsync(int id, CancellationToken ct = default)
@@ -22,7 +46,6 @@ namespace Backend.Services
             var room = await db.Rooms
                 .AsNoTracking()
                 .FirstOrDefaultAsync(r => r.Id == id, ct);
-
             if (room == null)
             {
                 throw NotFoundException.For<Room>(id);

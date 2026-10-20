@@ -10,9 +10,9 @@ namespace Backend.Controllers
     {
 
         [HttpGet]
-        public async Task<IActionResult> GetAllRooms(CancellationToken ct = default)
+        public async Task<IActionResult> GetAllRooms([FromQuery] FilterRoomRequest? filterReq, CancellationToken ct = default)
         {
-            var rooms = await roomService.GetAllRoomsAsync(ct);
+            var rooms = await roomService.GetAllRoomsAsync(filterReq, ct);
             return Ok(rooms);
         }
 

@@ -1,6 +1,5 @@
 const STORAGE_KEY = "userId";
 
-
 export function getStoredUserId(): number | null {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
@@ -10,6 +9,6 @@ export function getStoredUserId(): number | null {
     }
 }
 
-export function storeUserId(value: number){
-    localStorage.setItem(STORAGE_KEY, String(value))
+export function storeUserId(value: number) {
+    localStorage.setItem(STORAGE_KEY, String(value));
 }

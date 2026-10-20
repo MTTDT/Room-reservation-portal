@@ -10,7 +10,7 @@ namespace Backend.Controllers
     {
 
         [HttpGet]
-        public async Task<ActionResult<IReadOnlyList<UserResponse>>> GetAllUsers(CancellationToken ct)
+        public async Task<ActionResult<IReadOnlyList<UserResponse>>> GetAllUsers( CancellationToken ct)
         {
             var users = await userService.GetAllUsersAsync(ct);
             return Ok(users);

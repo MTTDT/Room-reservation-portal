@@ -7,11 +7,11 @@ namespace Backend.Controllers
     [ApiController]
     [Route("api/[controller]")]
     public class ReservationController(IReservationService reservationService) : ControllerBase
-    {
+    {       
         [HttpGet]
-        public async Task<IActionResult> GetAllReservations(CancellationToken ct)
+        public async Task<IActionResult> GetAllReservations([FromQuery] FilterReservationRequest? filterRequest, CancellationToken ct)
         {
-            var reservations = await reservationService.GetAllReservationsAsync(ct);
+            var reservations = await reservationService.GetAllReservationsAsync(filterRequest, ct);
             return Ok(reservations);
         }
 

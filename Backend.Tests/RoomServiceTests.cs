@@ -83,6 +83,72 @@ public class RoomServiceTests
                 nameof(RoomEquipment.VideoConferencing));
     }
 
+    [Fact]
+    public async Task GetAllRoomsAsync_FilterByCapacity_ReturnsRoomsWithAtLeastThatCapacity()
+    {
+        await using var db = TestDbContextFactory.Create();
+        db.Rooms.AddRange(
+            CreateRoom(id: 1, name: "Small", capacity: 4),
+            CreateRoom(id: 2, name: "Exact", capacity: 10),
+            CreateRoom(id: 3, name: "Large", capacity: 20));
+        await db.SaveChangesAsync();
+        var service = new RoomService(db);
+
+        var result = await service.GetAllRoomsAsync(new FilterRoomRequest { Capacity = 10 });
+
+        result.Select(r => r.Id).Should().Equal(2, 3);
+    }
+
+    [Fact]
+    public async Task GetAllRoomsAsync_FilterByFloor_ReturnsOnlyRoomsOnThatFloor()
+    {
+        await using var db = TestDbContextFactory.Create();
+        db.Rooms.AddRange(
+            CreateRoom(id: 1, name: "A", floor: 1),
+            CreateRoom(id: 2, name: "B", floor: 2),
+            CreateRoom(id: 3, name: "C", floor: 2));
+        await db.SaveChangesAsync();
+        var service = new RoomService(db);
+
+        var result = await service.GetAllRoomsAsync(new FilterRoomRequest { Floor = 2 });
+
+        result.Select(r => r.Id).Should().Equal(2, 3);
+    }
+
+    [Fact]
+    public async Task GetAllRoomsAsync_FilterByEquipment_RequiresAllSelectedItems()
+    {
+        await using var db = TestDbContextFactory.Create();
+        db.Rooms.AddRange(
+            CreateRoom(id: 1, name: "None", equipment: []),
+            CreateRoom(id: 2, name: "ProjectorOnly", equipment: [RoomEquipment.Projector]),
+            CreateRoom(id: 3, name: "Both", equipment: [RoomEquipment.Projector, RoomEquipment.VideoConferencing]));
+        await db.SaveChangesAsync();
+        var service = new RoomService(db);
+
+        var result = await service.GetAllRoomsAsync(new FilterRoomRequest
+        {
+            Equipment = [RoomEquipment.Projector, RoomEquipment.VideoConferencing]
+        });
+
+        result.Select(r => r.Id).Should().Equal(3);
+    }
+
+    [Fact]
+    public async Task GetAllRoomsAsync_FilterByEquipment_AllowsRoomsWithExtraEquipment()
+    {
+        await using var db = TestDbContextFactory.Create();
+        db.Rooms.Add(CreateRoom(id: 1, equipment: [RoomEquipment.Projector, RoomEquipment.VideoConferencing]));
+        await db.SaveChangesAsync();
+        var service = new RoomService(db);
+
+        var result = await service.GetAllRoomsAsync(new FilterRoomRequest
+        {
+            Equipment = [RoomEquipment.Projector]
+        });
+
+        result.Should().ContainSingle();
+    }
 
     [Fact]
     public async Task GetRoomByIdAsync_WhenRoomExists_ReturnsMappedRoom()

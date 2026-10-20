@@ -4,8 +4,14 @@ using Backend.AppOptions;
 using Microsoft.EntityFrameworkCore;
 using Backend.Models;
 using Backend.Exceptions;
+using System.Text.Json.Serialization;
+
 
 var builder = WebApplication.CreateBuilder(args);
+
+var origins = builder.Configuration
+    .GetSection("Cors:AlloedOrigins")
+    .Get<string[]>() ?? Array.Empty<string>();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -21,6 +27,17 @@ builder.Services
     .ValidateOnStart();
 builder.Services.AddExceptionHandler<AppExceptionHandler>();
 builder.Services.AddProblemDetails();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy => 
+        policy.WithOrigins(origins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+    );
+});
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 
 var app = builder.Build();
@@ -40,6 +57,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.MapControllers();
+app.UseCors("Frontend");  
 
 app.Run();
 

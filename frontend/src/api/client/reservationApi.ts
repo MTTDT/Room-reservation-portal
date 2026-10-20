@@ -1,7 +1,13 @@
-import type { Reservation, CreateReservation, UpdateReservation } from "../types/reservation";
+import type { Reservation, CreateReservation, UpdateReservation } from "../../types/reservation";
+import { getQuery } from "../../utils/query";
+
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export async function getReservations(): Promise<Reservation[]> {
-    const response = await fetch("/api/reservation");
+    const query = getQuery();
+
+    const response = await fetch(`${API_URL}/reservation${query && '?'+query}`);
     if (!response.ok) {
         throw new Error("Failed to fetch rooms");
     }
@@ -9,37 +15,30 @@ export async function getReservations(): Promise<Reservation[]> {
 }
 
 export async function createReservation(req: CreateReservation): Promise<Reservation> {
-    const response = await fetch("/api/reservation", {
+    const response = await fetch(`${API_URL}/reservation`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(req)
-    })
+        body: JSON.stringify(req),
+    });
 
-    if(!response.ok){
+    if (!response.ok) {
         const problem = await response.json().catch(() => null);
         throw new Error(problem?.detail ?? `Request failed (${response.status})`);
     }
-    
+
     return response.json();
 }
 
 export async function updateReservation(req: UpdateReservation, id: number): Promise<Reservation> {
-    console.log(req, "<<<")
-
-    const response = await fetch(`/api/reservation/${id}`, {
+    const response = await fetch(`${API_URL}/reservation/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(req)
-    })
+        body: JSON.stringify(req),
+    });
 
-        console.log(req, "<<<----")
-
-
-    if(!response.ok){
+    if (!response.ok) {
         const problem = await response.json().catch(() => null);
         throw new Error(problem?.detail ?? `Request failed (${response.status})`);
     }
-
-
     return response.json();
 }

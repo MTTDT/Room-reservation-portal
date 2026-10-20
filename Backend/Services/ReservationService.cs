@@ -8,17 +8,26 @@ using Backend.AppOptions;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
 using Backend.Exceptions;
+using System.Data;
 
 namespace Backend.Services
 {
     public class ReservationService(AppDbContext db, IOptions<ReservationOptions> options) : IReservationService
     {
         private readonly ReservationOptions rules = options.Value;
-        public async Task<IReadOnlyList<ReservationResponse>> GetAllReservationsAsync(CancellationToken ct = default)
+        public async Task<IReadOnlyList<ReservationResponse>> GetAllReservationsAsync(FilterReservationRequest? filter = null, CancellationToken ct = default)
         {
             return await db.Reservations
                 .AsNoTracking()
                 .OrderBy(r => r.Id)
+                .Where(r => 
+                    (filter == null) ||
+                    r.Room.Name.ToLower().Contains((filter.RoomName ?? "").ToLower()) &&
+                    (r.User.Name + " " + r.User.Surname).ToLower().Contains((filter.Organizer ?? "").ToLower()) &&
+                    (!filter.Status.HasValue || r.Status == filter.Status) &&
+                    (!filter.From.HasValue || r.StartTime >= filter.From) &&
+                    (!filter.To.HasValue || r.StartTime <= filter.To) 
+                )
                 .Select(ToResponse)
                 .ToListAsync(ct);
         }
@@ -62,12 +71,19 @@ namespace Backend.Services
 
         public async Task<ReservationResponse> UpdateReservationAsync(int id, UpdateReservationRequest request, CancellationToken ct = default)
         {
+
             var reservation = await db.Reservations.FindAsync([id], ct);
 
             if (reservation == null)
             {
                 throw NotFoundException.For<Reservation>(id);
             }
+
+            if (reservation.Status != ReservationStatus.Booked)
+            {
+                throw new AppConflict("Reservation is cancelled or already finished");
+            }
+
 
 
             await ValidateLocallyAsync(request.StartTime, request.EndTime, reservation.RoomId, reservation.UserId, request.AttendeeCount, ct, id);
@@ -76,7 +92,14 @@ namespace Backend.Services
             if (request.EndTime.HasValue) reservation.EndTime = request.EndTime.Value;
             if (request.Title is not null) reservation.Title = request.Title;
             if (request.AttendeeCount.HasValue) reservation.AttendeeCount = request.AttendeeCount.Value;
-            if (request.Status.HasValue) reservation.Status = request.Status.Value;
+            if (request.Status.HasValue)
+            {
+                if (request.Status.Value == ReservationStatus.Completed)
+                {
+                    reservation.ActualEndTime = DateTime.UtcNow;
+                }
+                reservation.Status = request.Status.Value;
+            } 
 
 
             await db.SaveChangesAsync(ct);
@@ -107,7 +130,7 @@ namespace Backend.Services
                 RoomId = r.RoomId,
                 RoomName = r.Room.Name,
                 StartTime = r.StartTime,
-                EndTime = r.EndTime,
+                EndTime = r.ActualEndTime ?? r.EndTime,
                 AttendeeCount = r.AttendeeCount,
                 Status = r.Status
             };
@@ -126,12 +149,12 @@ namespace Backend.Services
 
             if(duration > TimeSpan.FromDays(rules.MaxDurationDays))
             {
-                throw new AppValidationException($"A reservation can't be longer than {rules.MaxDurationDays}");
+                throw new AppValidationException($"A reservation can't be longer than {rules.MaxDurationDays} days");
             }
 
             if(reqStartTime > DateTime.UtcNow.AddDays(rules.MaxAdvanceReservationDays))
             {
-                throw new AppValidationException($"A reservation can't take place later than  {rules.MaxAdvanceReservationDays}");
+                throw new AppValidationException($"A reservation can't take place later than  {rules.MaxAdvanceReservationDays} days");
             }
 
             var roomOverlaps = await db.Reservations.AnyAsync(r =>

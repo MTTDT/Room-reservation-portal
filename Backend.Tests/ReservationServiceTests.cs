@@ -140,6 +140,23 @@ public class ReservationServiceTests
         result.Select(r => r.Id).Should().Equal(1, 2, 3);
     }
 
+    [Fact]
+    public async Task GetAllReservationsAsync_FilterByRoomName_ReturnsOnlyMatching()
+    {
+        await using var db = TestDbContextFactory.Create();
+        SeedBaseData(db);
+        db.Reservations.AddRange(
+            CreateReservation(id: 1, roomId: 1, start: BaseStart),
+            CreateReservation(id: 2, roomId: 2, start: BaseStart.AddHours(3)));
+        await db.SaveChangesAsync();
+        var service = CreateService(db);
+
+        var result = await service.GetAllReservationsAsync(
+            new FilterReservationRequest { RoomName = "oom a" });
+
+        result.Select(r => r.Id).Should().Equal(1);
+    }
+
 
 
     [Fact]

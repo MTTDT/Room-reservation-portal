@@ -21,7 +21,5 @@ namespace Backend.DTOs.Reservations
         public DateTime EndTime { get; set; }
 
         public int AttendeeCount {get; set;} = 0;
-
-        
     }
 }

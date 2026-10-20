@@ -1,13 +1,15 @@
-export const ReservationStatus = {
-  Booked: 0,
-  Completed: 1,
-  Cancelled: 2,
-} as const;
+export const RESERVATION_STATUS = ["Booked", "Completed", "Cancelled"] as const;
 
-export type ReservationStatus = (typeof ReservationStatus)[keyof typeof ReservationStatus];
+export type ReservationStatus = (typeof RESERVATION_STATUS)[number];
 
-export const reservationStatusLabels: Record<ReservationStatus, string> = {
-  [ReservationStatus.Booked]: "Booked",
-  [ReservationStatus.Completed]: "Completed",
-  [ReservationStatus.Cancelled]: "Cancelled",
+export const RESERVATION_STATUS_LABELS: Record<ReservationStatus, string> = {
+  Booked: "Booked",
+  Completed: "Completed",
+  Cancelled: "Cancelled",
 };
+
+export const ReservationStatusValue = {
+  Booked: "Booked",
+  Completed: "Completed",
+  Cancelled: "Cancelled",
+} as const;
