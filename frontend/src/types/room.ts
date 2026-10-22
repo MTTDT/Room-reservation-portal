@@ -12,5 +12,5 @@ export interface Room {
 export interface FilterRoom {
     capacity?: number;
     equipment?: Equipment[];
-    floor?: number
+    floor?: number;
 }

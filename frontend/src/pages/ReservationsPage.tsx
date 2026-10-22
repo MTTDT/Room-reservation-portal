@@ -3,9 +3,18 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tansta
 import { Alert, CircularProgress, Box, Switch, FormControlLabel } from "@mui/material";
 import ReservationForm from "../components/ReservationForm";
 import { RoomTimeline, type Slot } from "../components/RoomTimeline";
-import type { UpdateReservation, CreateReservation, FilterReservation, Reservation } from "../types/reservation";
+import type {
+    UpdateReservation,
+    CreateReservation,
+    FilterReservation,
+    Reservation,
+} from "../types/reservation";
 import { ReservationStatusValue } from "../types/reservationStatus";
-import { getReservations, createReservation, updateReservation } from "../api/client/reservationApi";
+import {
+    getReservations,
+    createReservation,
+    updateReservation,
+} from "../api/client/reservationApi";
 import { getRooms } from "../api/client/roomApi";
 import { getStoredUserId } from "../utils/userStoring";
 import ReservationFilter from "../components/ReservationFilter";
@@ -15,7 +24,6 @@ import FilterPanel from "../components/FilterPanel";
 import SimpleTable from "../components/SimpleTable";
 
 export default function RoomsPage() {
-
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -50,20 +58,26 @@ export default function RoomsPage() {
     ];
 
     useEffect(() => {
-        navigate({search : buildQuery(filter)});
-    }, [filter, navigate])
+        navigate({ search: buildQuery(filter) });
+    }, [filter, navigate]);
 
-
-
-    const {data: rooms, isLoading: roomsLoading, error: roomsError } = useQuery({
+    const {
+        data: rooms,
+        isLoading: roomsLoading,
+        error: roomsError,
+    } = useQuery({
         queryKey: ["rooms"],
         queryFn: getRooms,
     });
 
-    const { data: reservations, isLoading: reservationsLoading, error: reservationsError } = useQuery({
+    const {
+        data: reservations,
+        isLoading: reservationsLoading,
+        error: reservationsError,
+    } = useQuery({
         queryKey: ["reservations", filter],
         queryFn: getReservations,
-        placeholderData: keepPreviousData
+        placeholderData: keepPreviousData,
     });
 
     const createMutation = useMutation({
@@ -72,12 +86,12 @@ export default function RoomsPage() {
             queryClient.invalidateQueries({ queryKey: ["reservations"] });
             setSlot(null);
             setResId(null);
-
         },
     });
 
     const updateMutation = useMutation({
-        mutationFn: ({ data, id }: { data: UpdateReservation; id: number }) =>updateReservation(data, id),
+        mutationFn: ({ data, id }: { data: UpdateReservation; id: number }) =>
+            updateReservation(data, id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["reservations"] });
             setUpdateRes(null);
@@ -120,21 +134,25 @@ export default function RoomsPage() {
         setSlot(null);
         setUpdateRes(null);
         setResId(null);
+        createMutation.reset();
+        updateMutation.reset();
     };
 
-    const handleFilterChange = <K extends keyof FilterReservation>(key: K, value: FilterReservation[K]) => {
+    const handleFilterChange = <K extends keyof FilterReservation>(
+        key: K,
+        value: FilterReservation[K]
+    ) => {
         setSearchParams(buildQuery({ ...filter, [key]: value }), { replace: true });
-
-    }
+    };
 
     const handleResetFilter = () => {
-      setSearchParams({}, { replace: true});
-    }
+        setSearchParams({}, { replace: true });
+    };
 
     return (
         <Box>
             <Box>
-               <FormControlLabel
+                <FormControlLabel
                     label="Show only my"
                     control={
                         <Switch
@@ -146,12 +164,10 @@ export default function RoomsPage() {
                     }
                 />
                 <FilterPanel onReset={handleResetFilter}>
-                    <ReservationFilter filters={filter} handleChange={handleFilterChange}/>
+                    <ReservationFilter filters={filter} handleChange={handleFilterChange} />
                 </FilterPanel>
-
             </Box>
             <Box>
-                
                 <RoomTimeline
                     showOnlyMy={showOnlyMy}
                     rooms={rooms}
@@ -179,7 +195,11 @@ export default function RoomsPage() {
                     />
                 )}
             </Box>
-            <SimpleTable<Reservation> headers={tableHeaders} keys={tableKeys} objs={reservations as Reservation[]} />
+            <SimpleTable<Reservation>
+                headers={tableHeaders}
+                keys={tableKeys}
+                objs={reservations as Reservation[]}
+            />
         </Box>
     );
 }

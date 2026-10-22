@@ -8,4 +8,3 @@ export const EQUIPMENT_LABELS: Record<Equipment, string> = {
     VideoConferencing: "Video conferencing",
     Whiteboard: "Whiteboard",
 };
-

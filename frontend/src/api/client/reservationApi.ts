@@ -1,13 +1,12 @@
 import type { Reservation, CreateReservation, UpdateReservation } from "../../types/reservation";
 import { getQuery } from "../../utils/query";
 
-
 const API_URL = import.meta.env.VITE_API_URL;
 
 export async function getReservations(): Promise<Reservation[]> {
     const query = getQuery();
 
-    const response = await fetch(`${API_URL}/reservation${query && '?'+query}`);
+    const response = await fetch(`${API_URL}/reservation${query && "?" + query}`);
     if (!response.ok) {
         throw new Error("Failed to fetch rooms");
     }

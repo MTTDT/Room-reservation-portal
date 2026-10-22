@@ -1,6 +1,3 @@
-export default function WelcomePage(){
-    return(
-        <>
-        </>
-    )
+export default function WelcomePage() {
+    return <></>;
 }

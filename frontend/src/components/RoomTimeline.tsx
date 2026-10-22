@@ -41,8 +41,6 @@ export interface RoomTimelineProps {
     style?: React.CSSProperties;
 }
 
-
-
 function toDate(v: DateInput): Date {
     if (v instanceof Date) return new Date(v.getTime());
     if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
@@ -443,7 +441,9 @@ export function RoomTimeline(props: RoomTimelineProps) {
                                                         <Box>
                                                             <Box sx={{ fontWeight: 400 }}>
                                                                 {
-                                                                    RESERVATION_STATUS_LABELS[it.b.status]
+                                                                    RESERVATION_STATUS_LABELS[
+                                                                        it.b.status
+                                                                    ]
                                                                 }
                                                             </Box>
                                                             <Box sx={{ fontWeight: 600 }}>
@@ -468,7 +468,7 @@ export function RoomTimeline(props: RoomTimelineProps) {
                                                 >
                                                     <ButtonBase
                                                         disableRipple
-                                                        onClick={() => 
+                                                        onClick={() =>
                                                             onBookingClick?.(
                                                                 buildUpdateReq(it.b),
                                                                 it.b.id,

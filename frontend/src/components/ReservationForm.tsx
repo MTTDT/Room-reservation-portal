@@ -1,12 +1,5 @@
 import { useState, type ChangeEvent, type SubmitEvent } from "react";
-import {
-    Box,
-    TextField,
-    Alert,
-    Dialog,
-    DialogTitle,
-    Button,
-} from "@mui/material";
+import { Box, TextField, Alert, Dialog, DialogTitle, Button } from "@mui/material";
 import type { CreateReservation, UpdateReservation } from "../types/reservation";
 import { type ReservationStatus, ReservationStatusValue } from "../types/reservationStatus";
 import dayjs, { Dayjs } from "dayjs";
@@ -34,7 +27,6 @@ interface FormValues {
 }
 
 export default function ReservationForm(props: ReservationFormProps) {
-
     const [values, setValues] = useState<FormValues>({
         title: props.updateRes?.title ?? "",
         from: props.updateRes ? dayjs(props.updateRes.startTime) : dayjs(props.startTime),
@@ -148,17 +140,18 @@ export default function ReservationForm(props: ReservationFormProps) {
                     required
                 />
 
-                <Button type="submit" variant="contained" disabled={props.isSubmitting} loading={props.isSubmitting}>
-                     {props.updateRes ? (
-                        "Update reservation"
-                    ) : (
-                        "Submit reservation"
-                    )}
+                <Button
+                    type="submit"
+                    variant="contained"
+                    disabled={props.isSubmitting}
+                    loading={props.isSubmitting}
+                >
+                    {props.updateRes ? "Update reservation" : "Submit reservation"}
                 </Button>
 
                 {props.updateRes && currentlyHappening() && (
                     <Button type="button" variant="contained" onClick={handleComplete}>
-                        Complete reservation
+                        Complete meeting early
                     </Button>
                 )}
 

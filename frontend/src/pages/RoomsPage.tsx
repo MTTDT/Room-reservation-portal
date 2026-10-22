@@ -1,9 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import {
-    Alert,
-    CircularProgress,
-    Typography,
-} from "@mui/material";
+import { Alert, CircularProgress, Typography } from "@mui/material";
 import { getRooms } from "../api/client/roomApi";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect, useMemo } from "react";
@@ -14,12 +10,10 @@ import FilterPanel from "../components/FilterPanel";
 import SimpleTable from "../components/SimpleTable";
 
 export default function RoomsPage() {
-
     const navigate = useNavigate();
 
     const [searchParams, setSearchParams] = useSearchParams();
 
-  
     const filter = useMemo(() => parseQuery(searchParams.toString()), [searchParams]);
 
     const tableHeaders: string[] = [
@@ -43,10 +37,14 @@ export default function RoomsPage() {
     ];
 
     useEffect(() => {
-        navigate({search : buildQuery(filter)}, {replace: true});
-    }, [filter, navigate])
+        navigate({ search: buildQuery(filter) }, { replace: true });
+    }, [filter, navigate]);
 
-    const { data: rooms, isLoading, error, } = useQuery({
+    const {
+        data: rooms,
+        isLoading,
+        error,
+    } = useQuery({
         queryKey: ["rooms", filter],
         queryFn: getRooms,
         placeholderData: keepPreviousData,
@@ -57,22 +55,21 @@ export default function RoomsPage() {
 
     const handleFilterChange = <K extends keyof FilterRoom>(key: K, value: FilterRoom[K]) => {
         setSearchParams(buildQuery({ ...filter, [key]: value }), { replace: true });
-    }
+    };
 
     const handleResetFilter = () => {
-      setSearchParams({}, { replace: true })
-
-    }
+        setSearchParams({}, { replace: true });
+    };
 
     return (
         <>
             <Typography variant="h4" gutterBottom>
                 Rooms
             </Typography>
-             <FilterPanel onReset={handleResetFilter}>
-                  <RoomFilter filters={filter} handleChange={handleFilterChange}/>
-              </FilterPanel>
-              <SimpleTable<Room> headers={tableHeaders} keys={tableKeys} objs={rooms as Room[]}/>
+            <FilterPanel onReset={handleResetFilter}>
+                <RoomFilter filters={filter} handleChange={handleFilterChange} />
+            </FilterPanel>
+            <SimpleTable<Room> headers={tableHeaders} keys={tableKeys} objs={rooms as Room[]} />
         </>
     );
 }
